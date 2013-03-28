@@ -63,8 +63,8 @@ module Cql
       end
 
       it 'converts Times' do
-        subject.sanitize('?', Time.new(2013, 3, 26, 23, 1, 2.544))
-          .should == 1364364062544.to_s
+        subject.sanitize('?', Time.new(2013, 3, 26, 23, 1, 2.544, 0))
+          .should == 1364338862544.to_s
       end
 
       it 'converts Cql::Uuids to an bare string representation' do
