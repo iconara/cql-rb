@@ -80,7 +80,7 @@ describe 'Protocol parsing and communication' do
   context 'when setting up' do
     it 'sends OPTIONS and receives SUPPORTED' do
       response = execute_request(Cql::Protocol::OptionsRequest.new)
-      response.options.should include('CQL_VERSION' => ['3.0.0'])
+      response.options['CQL_VERSION'].first.should match(/3\.0\.\d+/)
     end
 
     it 'sends STARTUP and receives READY' do
