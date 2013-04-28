@@ -82,6 +82,7 @@ module Cql
           @lock.synchronize do
             @connections.delete(connection)
           end
+          add_connection(host, port)
         end
         f = connection.open
         @lock.synchronize do
