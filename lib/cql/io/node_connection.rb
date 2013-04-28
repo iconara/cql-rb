@@ -8,11 +8,14 @@ module Cql
   module Io
     # @private
     class NodeConnection
+      attr_reader :keyspace
+
       def initialize(*args)
         @host, @port, @connection_timeout = args
         @connected_future = Future.new
         @io = nil
         @addrinfo = nil
+        @keyspace = nil
         @write_buffer = ''
         @read_buffer = ''
         @current_frame = Protocol::ResponseFrame.new(@read_buffer)
@@ -96,7 +99,11 @@ module Cql
           if stream_id == EVENT_STREAM_ID
             @event_listeners[:event].each { |listener| listener.call(@current_frame.body) }
           elsif @response_tasks[stream_id]
-            @response_tasks[stream_id].complete!([@current_frame.body, connection_id])
+            body = @current_frame.body
+            if body.instance_of? Cql::Protocol::SetKeyspaceResultResponse
+              @keyspace = body.keyspace
+            end
+            @response_tasks[stream_id].complete!([body, connection_id])
             @response_tasks[stream_id] = nil
           else
             # TODO dropping the request on the floor here, but we didn't send it
