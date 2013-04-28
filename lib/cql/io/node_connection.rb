@@ -132,7 +132,7 @@ module Cql
         fail_connection!(e)
       end
 
-      def close
+      def close(error=nil)
         if @io
           begin
             @io.close
@@ -143,7 +143,7 @@ module Cql
             succeed_connection!
           end
           @io = nil
-          @event_listeners[:close].each { |listener| listener.call(self) }
+          @event_listeners[:close].each { |listener| listener.call(error) }
         end
       end
 
@@ -193,7 +193,7 @@ module Cql
         @response_tasks.each do |listener|
           listener.fail!(error) if listener
         end
-        close
+        close(error)
       end
 
       def next_stream_id
