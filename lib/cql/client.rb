@@ -67,7 +67,6 @@ module Cql
       @shut_down = false
       @initial_keyspace = options[:keyspace]
       @credentials = options[:credentials]
-      @connection_keyspaces = {}
     end
 
     def self.connect(options={})
@@ -92,7 +91,7 @@ module Cql
         @io_reactor.start
         hosts = @host.split(',')
         connection_futures = hosts.map { |host| connect_to_host(host) }
-        @connection_ids = Future.combine(*connection_futures).get
+        Future.combine(*connection_futures).get
       end
       use(@initial_keyspace) if @initial_keyspace
       self
@@ -142,24 +141,25 @@ module Cql
     #
     def keyspace
       @lock.synchronize do
-        return @connection_ids.map { |id| @connection_keyspaces[id] }.first
+        return connections.first.keyspace
       end
     end
 
     # Changes keyspace by sending a `USE` statement to all connections.
     #
-    # The the second parameter is meant for internal use only.
-    #
     # @raise [Cql::NotConnectedError] raised when the client is not connected
     #
-    def use(keyspace, connection_ids=@connection_ids)
+    def use(keyspace)
       raise NotConnectedError unless connected?
       if check_keyspace_name!(keyspace)
+        connection_ids_to_update = []
         @lock.synchronize do
-          connection_ids = connection_ids.select { |id| @connection_keyspaces[id] != keyspace }
+          connection_ids_to_update = connections.select do |connection|
+            connection.keyspace != keyspace
+          end.map { |connection| connection.connection_id }
         end
-        if connection_ids.any?
-          futures = connection_ids.map do |connection_id|
+        if connection_ids_to_update.any?
+          futures = connection_ids_to_update.map do |connection_id|
             execute_request(Protocol::QueryRequest.new("USE #{keyspace}", :one), connection_id)
           end
           futures.compact!
@@ -200,6 +200,10 @@ module Cql
     def prepare(cql)
       raise NotConnectedError unless connected?
       execute_request(Protocol::PrepareRequest.new(cql)).value
+    end
+
+    def connections
+      @io_reactor.connections
     end
 
     private
@@ -252,7 +256,7 @@ module Cql
         PreparedStatement.new(self, connection_id, response.id, response.metadata)
       when Protocol::SetKeyspaceResultResponse
         @lock.synchronize do
-          @last_keyspace_change = @connection_keyspaces[connection_id] = response.keyspace
+          @last_keyspace_change = response.keyspace
         end
         nil
       when Protocol::AuthenticateResponse
@@ -268,7 +272,7 @@ module Cql
         ks = @last_keyspace_change
         return unless @last_keyspace_change
       end
-      use(ks, @connection_ids) if ks
+      use(ks) if ks
     end
 
     public

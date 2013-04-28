@@ -91,6 +91,10 @@ module Cql
         f
       end
 
+      def connections
+        @connections[1..-1]
+      end
+
       # Sends a request over a random, or specific connection.
       #
       # @param [Cql::Protocol::RequestBody] request the request to send
