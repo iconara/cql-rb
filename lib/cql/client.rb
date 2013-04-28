@@ -61,7 +61,11 @@ module Cql
       connection_timeout = options[:connection_timeout]
       @host = options[:host] || 'localhost'
       @port = options[:port] || 9042
+      @connections = Client::Connections.new(self)
       @io_reactor = options[:io_reactor] || Io::IoReactor.new(connection_timeout: connection_timeout)
+      @io_reactor.on_connection_close do |connection, error|
+        @connections.on_connection_close(connection, error)
+      end
       @lock = Mutex.new
       @started = false
       @shut_down = false
@@ -91,6 +95,7 @@ module Cql
         @io_reactor.start
         hosts = @host.split(',')
         connection_futures = hosts.map { |host| connect_to_host(host) }
+        # Block until all connections complete.
         Future.combine(*connection_futures).get
       end
       use(@initial_keyspace) if @initial_keyspace
@@ -140,9 +145,7 @@ module Cql
     # set yet.
     #
     def keyspace
-      @lock.synchronize do
-        return connections.first.keyspace
-      end
+      @connections.keyspace
     end
 
     # Changes keyspace by sending a `USE` statement to all connections.
@@ -152,19 +155,12 @@ module Cql
     def use(keyspace)
       raise NotConnectedError unless connected?
       if check_keyspace_name!(keyspace)
-        connection_ids_to_update = []
-        @lock.synchronize do
-          connection_ids_to_update = connections.select do |connection|
-            connection.keyspace != keyspace
-          end.map { |connection| connection.connection_id }
+        connection_ids = @connections.needing_keyspace_update(keyspace)
+        futures = connection_ids.map do |connection_id|
+          execute_request(Protocol::QueryRequest.new("USE #{keyspace}", :one), connection_id)
         end
-        if connection_ids_to_update.any?
-          futures = connection_ids_to_update.map do |connection_id|
-            execute_request(Protocol::QueryRequest.new("USE #{keyspace}", :one), connection_id)
-          end
-          futures.compact!
-          Future.combine(*futures).get
-        end
+        futures.compact!
+        Future.combine(*futures).get unless futures.empty?
         nil
       end
     end
@@ -180,9 +176,7 @@ module Cql
     #
     def execute(cql, consistency=DEFAULT_CONSISTENCY_LEVEL)
       raise NotConnectedError unless connected?
-      result = execute_request(Protocol::QueryRequest.new(cql, consistency)).value
-      ensure_keyspace!
-      result
+      execute_request(Protocol::QueryRequest.new(cql, consistency)).value
     end
 
     # @private
@@ -202,10 +196,6 @@ module Cql
       execute_request(Protocol::PrepareRequest.new(cql)).value
     end
 
-    def connections
-      @io_reactor.connections
-    end
-
     private
 
     KEYSPACE_NAME_PATTERN = /^\w[\w\d_]*$/
@@ -220,6 +210,7 @@ module Cql
 
     def connect_to_host(host)
       connected = @io_reactor.add_connection(host, @port)
+      @connections.add(connected, host)
       connected.flat_map do |connection_id|
         started = execute_request(Protocol::StartupRequest.new, connection_id)
         started.flat_map { |response| maybe_authenticate(response, connection_id) }
@@ -255,24 +246,13 @@ module Cql
       when Protocol::PreparedResultResponse
         PreparedStatement.new(self, connection_id, response.id, response.metadata)
       when Protocol::SetKeyspaceResultResponse
-        @lock.synchronize do
-          @last_keyspace_change = response.keyspace
-        end
+        @connections.on_keyspace_change(response.keyspace, connection_id)
         nil
       when Protocol::AuthenticateResponse
         AuthenticationRequired.new(response.authentication_class)
       else
         nil
       end
-    end
-
-    def ensure_keyspace!
-      ks = nil
-      @lock.synchronize do
-        ks = @last_keyspace_change
-        return unless @last_keyspace_change
-      end
-      use(ks) if ks
     end
 
     public
@@ -391,3 +371,5 @@ module Cql
     end
   end
 end
+
+require 'cql/client/connections'

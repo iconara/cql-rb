@@ -22,6 +22,7 @@ module Cql
         @started_future = Future.new
         @stopped_future = Future.new
         @running = false
+        @event_listeners = Hash.new { |h, k| h[k] = [] }
       end
 
       # Returns whether or not the reactor is running
@@ -69,6 +70,10 @@ module Cql
         @stopped_future
       end
 
+      def on_connection_close(&listener)
+        @event_listeners[:connection_close] << listener
+      end
+
       # Establish a new connection.
       #
       # @param [String] host The hostname to connect to
@@ -78,11 +83,13 @@ module Cql
       #
       def add_connection(host, port)
         connection = NodeConnection.new(host, port, @connection_timeout)
-        connection.on_close do
+        connection.on_close do |error|
           @lock.synchronize do
             @connections.delete(connection)
           end
-          add_connection(host, port)
+          @event_listeners[:connection_close].each do |listener|
+            listener.call(connection, error)
+          end
         end
         f = connection.open
         @lock.synchronize do
@@ -90,10 +97,6 @@ module Cql
         end
         command_queue_push(nil)
         f
-      end
-
-      def connections
-        @connections[1..-1]
       end
 
       # Sends a request over a random, or specific connection.
