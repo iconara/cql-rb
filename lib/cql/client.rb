@@ -179,16 +179,25 @@ module Cql
     #   (see {QueryResult}).
     #
     def execute(cql, consistency=DEFAULT_CONSISTENCY_LEVEL)
+      execute_async(cql,consistency).value
+    end
+
+    def execute_async(cql, consistency=DEFAULT_CONSISTENCY_LEVEL)
       raise NotConnectedError unless connected?
-      result = execute_request(Protocol::QueryRequest.new(cql, consistency)).value
+      result = execute_request(Protocol::QueryRequest.new(cql, consistency))
       ensure_keyspace!
       result
     end
 
     # @private
     def execute_statement(connection_id, statement_id, metadata, values, consistency)
+      execute_statement_async(connection_id,statement_id,metadata,values,consistency).value
+    end
+
+    # @private
+    def execute_statement_async(connection_id, statement_id, metadata, values, consistency)
       raise NotConnectedError unless connected?
-      execute_request(Protocol::ExecuteRequest.new(statement_id, metadata, values, consistency || DEFAULT_CONSISTENCY_LEVEL), connection_id).value
+      execute_request(Protocol::ExecuteRequest.new(statement_id, metadata, values, consistency || DEFAULT_CONSISTENCY_LEVEL), connection_id)
     end
 
     # Returns a prepared statement that can be run over and over again with
@@ -303,6 +312,12 @@ module Cql
         bound_args = args.shift(@raw_metadata.size)
         consistency_level = args.shift
         @client.execute_statement(@connection_id, @statement_id, @raw_metadata, bound_args, consistency_level)
+      end
+
+      def execute_async(*args)
+        bound_args = args.shift(@raw_metadata.size)
+        consistency_level = args.shift
+        @client.execute_statement_async(@connection_id, @statement_id, @raw_metadata, bound_args, consistency_level)
       end
     end
 
