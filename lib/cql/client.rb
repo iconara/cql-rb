@@ -182,16 +182,12 @@ module Cql
       execute_async(cql,consistency).value
     end
 
+    # Async version of Client#execute
     def execute_async(cql, consistency=DEFAULT_CONSISTENCY_LEVEL)
       raise NotConnectedError unless connected?
       result = execute_request(Protocol::QueryRequest.new(cql, consistency))
       ensure_keyspace!
       result
-    end
-
-    # @private
-    def execute_statement(connection_id, statement_id, metadata, values, consistency)
-      execute_statement_async(connection_id,statement_id,metadata,values,consistency).value
     end
 
     # @private
@@ -309,11 +305,10 @@ module Cql
       #   the desired consistency level, as a symbol (defaults to :quorum)
       #
       def execute(*args)
-        bound_args = args.shift(@raw_metadata.size)
-        consistency_level = args.shift
-        @client.execute_statement(@connection_id, @statement_id, @raw_metadata, bound_args, consistency_level)
+        execute_async(*args).value
       end
 
+      # Async version of PreparedStatement#execute
       def execute_async(*args)
         bound_args = args.shift(@raw_metadata.size)
         consistency_level = args.shift
