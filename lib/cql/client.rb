@@ -179,6 +179,7 @@ module Cql
     #   (see {QueryResult}).
     #
     def execute(cql, consistency=DEFAULT_CONSISTENCY_LEVEL)
+      logger.info(cql)
       execute_async(cql,consistency).value
     end
 
