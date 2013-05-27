@@ -3,6 +3,7 @@ source 'https://rubygems.org/'
 gemspec
 
 gem 'rake'
+gem 'highline'
 
 group :development do
   gem 'pry'

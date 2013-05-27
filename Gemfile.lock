@@ -90,6 +90,7 @@ PLATFORMS
 
 DEPENDENCIES
   cql-rb!
+  highline
   perftools.rb
   pry
   rake
