@@ -202,6 +202,13 @@ module Cql
         it 'raises an error if the keyspace name is not valid' do
           expect { client.use('system; DROP KEYSPACE system').get }.to raise_error(InvalidKeyspaceNameError)
         end
+
+        it 'allows the keyspace name to be quoted' do
+          io_reactor.queue_response(Protocol::SetKeyspaceResultResponse.new('system'))
+          client.connect.get
+          client.use('"system"').get
+          client.keyspace.should == "system"
+        end
       end
 
       describe '#execute' do
