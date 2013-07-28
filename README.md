@@ -43,6 +43,12 @@ or using CQL:
 client.execute('USE measurements')
 ```
 
+If your keyspace has upper case characters you need to quote the keyspace name _(this is supported in v1.0.2 and later)_:
+
+```ruby
+client.execute('USE "Measurements"')
+```
+
 ## Running queries
 
 You run CQL statements by passing them to `#execute`. Most statements don't have any result and the call will return nil.
