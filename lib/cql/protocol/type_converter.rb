@@ -242,11 +242,7 @@ module Cql
 
       def bigint_to_bytes(io, value, size_bytes)
         if value
-          if size_bytes == 4
-            write_int(io, 8)
-          else
-            write_short(io, 8)
-          end
+          size_to_bytes(io, 8, size_bytes)
           write_long(io, value)
         else
           nil_to_bytes(io, size_bytes)
@@ -264,11 +260,7 @@ module Cql
 
       def boolean_to_bytes(io, value, size_bytes)
         if !value.nil?
-          if size_bytes == 4
-            write_int(io, 1)
-          else
-            write_short(io, 1)
-          end
+          size_to_bytes(io, 1, size_bytes)
           io << (value ? Constants::TRUE_BYTE : Constants::FALSE_BYTE)
         else
           nil_to_bytes(io, size_bytes)
@@ -286,11 +278,7 @@ module Cql
 
       def double_to_bytes(io, value, size_bytes)
         if value
-          if size_bytes == 4
-            write_int(io, 8)
-          else
-            write_short(io, 8)
-          end
+          size_to_bytes(io, 8, size_bytes)
           write_double(io, value)
         else
           nil_to_bytes(io, size_bytes)
@@ -299,11 +287,7 @@ module Cql
 
       def float_to_bytes(io, value, size_bytes)
         if value
-          if size_bytes == 4
-            write_int(io, 4)
-          else
-            write_short(io, 4)
-          end
+          size_to_bytes(io, 4, size_bytes)
           write_float(io, value)
         else
           nil_to_bytes(io, size_bytes)
@@ -312,11 +296,7 @@ module Cql
 
       def inet_to_bytes(io, value, size_bytes)
         if value
-          if size_bytes == 4
-            write_int(io, value.ipv6? ? 16 : 4)
-          else
-            write_short(io, value.ipv6? ? 16 : 4)
-          end
+          size_to_bytes(io, value.ipv6? ? 16 : 4, size_bytes)
           io << value.hton
         else
           nil_to_bytes(io, size_bytes)
@@ -325,11 +305,7 @@ module Cql
 
       def int_to_bytes(io, value, size_bytes)
         if value
-          if size_bytes == 4
-            write_int(io, 4)
-          else
-            write_short(io, 4)
-          end
+          size_to_bytes(io, 4, size_bytes)
           write_int(io, value)
         else
           nil_to_bytes(io, size_bytes)
@@ -348,11 +324,7 @@ module Cql
       def timestamp_to_bytes(io, value, size_bytes)
         if value
           ms = (value.to_f * 1000).to_i
-          if size_bytes == 4
-            write_int(io, 8)
-          else
-            write_short(io, 8)
-          end
+          size_to_bytes(io, 8, size_bytes)
           write_long(io, ms)
         else
           nil_to_bytes(io, size_bytes)
@@ -361,11 +333,7 @@ module Cql
 
       def uuid_to_bytes(io, value, size_bytes)
         if value
-          if size_bytes == 4
-            write_int(io, 16)
-          else
-            write_short(io, 16)
-          end
+          size_to_bytes(io, 16, size_bytes)
           write_uuid(io, value)
         else
           nil_to_bytes(io, size_bytes)
@@ -378,6 +346,14 @@ module Cql
           write_bytes(io, raw)
         else
           write_short_bytes(io, raw)
+        end
+      end
+
+      def size_to_bytes(io, size, size_bytes)
+        if size_bytes == 4
+          write_int(io, size)
+        else
+          write_short(io, size)
         end
       end
 
