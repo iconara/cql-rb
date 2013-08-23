@@ -50,7 +50,7 @@ module Cql
 
     # @private
     def eql?(other)
-      self.value == other.value
+      other.kind_of?(Uuid) && self.value == other.value
     end
     alias_method :==, :eql?
 
