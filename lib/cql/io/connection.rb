@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 require 'socket'
+require 'resolv'
 
 
 module Cql
@@ -13,13 +14,14 @@ module Cql
       attr_reader :host, :port, :connection_timeout
 
       # @private
-      def initialize(host, port, connection_timeout, unblocker, clock, socket_impl=Socket)
+      def initialize(host, port, connection_timeout, unblocker, clock, socket_impl=Socket, resolv_impl=Resolv)
         @host = host
         @port = port
         @connection_timeout = connection_timeout
         @unblocker = unblocker
         @clock = clock
         @socket_impl = socket_impl
+        @resolv_impl = resolv_impl
         @lock = Mutex.new
         @connected = false
         @write_buffer = ByteBuffer.new
@@ -29,14 +31,24 @@ module Cql
       # @private
       def connect
         begin
-          unless @addrinfos
+          unless @addresses
             @connection_started_at = @clock.now
-            @addrinfos = @socket_impl.getaddrinfo(@host, @port, nil, Socket::SOCK_STREAM)
+            @addresses = @resolv_impl.getaddresses(@host)
           end
           unless @io
-            _, port, _, ip, address_family, socket_type = @addrinfos.shift
-            @sockaddr = @socket_impl.sockaddr_in(port, ip)
-            @io = @socket_impl.new(address_family, socket_type, 0)
+            address = nil
+            begin
+              address_str = @addresses.shift
+              address = IPAddr.new(address_str)
+            rescue ArgumentError => e
+              if @addresses.empty?
+                close(ConnectionError.new(%(Could not resolve hostname "#{@host}")))
+              else
+                retry
+              end
+            end
+            @sockaddr = @socket_impl.sockaddr_in(@port, address.to_s)
+            @io = @socket_impl.new(address.family, Socket::SOCK_STREAM)
           end
           unless connected?
             @io.connect_nonblock(@sockaddr)
@@ -51,7 +63,7 @@ module Cql
             close(ConnectionTimeoutError.new("Could not connect to #{@host}:#{@port} within #{@connection_timeout}s"))
           end
         rescue Errno::EINVAL => e
-          if @addrinfos.empty?
+          if @addresses.empty?
             close(e)
           else
             @io = nil

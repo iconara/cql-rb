@@ -7,7 +7,7 @@ module Cql
   module Io
     describe Connection do
       let :handler do
-        described_class.new('example.com', 55555, 5, unblocker, clock, socket_impl)
+        described_class.new('example.com', 55555, 5, unblocker, clock, socket_impl, resolv_impl)
       end
 
       let :unblocker do
@@ -16,6 +16,10 @@ module Cql
 
       let :socket_impl do
         double(:socket_impl)
+      end
+
+      let :resolv_impl do
+        double(:resolv_impl)
       end
 
       let :clock do
@@ -27,14 +31,14 @@ module Cql
       end
 
       before do
-        socket_impl.stub(:getaddrinfo)
-          .with('example.com', 55555, nil, Socket::SOCK_STREAM)
-          .and_return([[nil, 'PORT', nil, 'IP1', 'FAMILY1', 'TYPE1'], [nil, 'PORT', nil, 'IP2', 'FAMILY2', 'TYPE2']])
+        resolv_impl.stub(:getaddresses)
+          .with('example.com')
+          .and_return(['1.1.1.1', '2.2.2.2'])
         socket_impl.stub(:sockaddr_in)
-          .with('PORT', 'IP1')
+          .with(55555, '1.1.1.1')
           .and_return('SOCKADDR1')
         socket_impl.stub(:new)
-          .with('FAMILY1', 'TYPE1', 0)
+          .with(Socket::AF_INET, Socket::SOCK_STREAM)
           .and_return(socket)
       end
 
@@ -116,10 +120,10 @@ module Cql
         context 'when #connect_nonblock raises EINVAL' do
           before do
             socket_impl.stub(:sockaddr_in)
-              .with('PORT', 'IP2')
+              .with(55555, '2.2.2.2')
               .and_return('SOCKADDR2')
             socket_impl.stub(:new)
-              .with('FAMILY2', 'TYPE2', 0)
+              .with(Socket::AF_INET, Socket::SOCK_STREAM)
               .and_return(socket)
             socket.stub(:close)
           end
@@ -173,9 +177,9 @@ module Cql
           end
         end
 
-        context 'when Socket.getaddrinfo raises SocketError' do
+        context 'when Resolv.getaddresses raises SocketError' do
           before do
-            socket_impl.stub(:getaddrinfo).and_raise(SocketError)
+            resolv_impl.stub(:getaddresses).and_raise(SocketError)
           end
 
           it 'fails the returned future with a ConnectionError' do
