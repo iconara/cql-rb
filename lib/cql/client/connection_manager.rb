@@ -14,11 +14,11 @@ module Cql
 
       def add_connections(connections)
         @lock.synchronize do
-          @connections.concat(connections)
+          @connections += connections
           connections.each do |connection|
             connection.on_closed do
               @lock.synchronize do
-                @connections.delete(connection)
+                @connections = @connections.reject { |c| c == connection }
               end
             end
           end
@@ -26,9 +26,7 @@ module Cql
       end
 
       def connected?
-        @lock.synchronize do
-          @connections.any?
-        end
+        @connections.any?
       end
 
       def snapshot
@@ -39,17 +37,13 @@ module Cql
 
       def connection
         raise NotConnectedError unless connected?
-        @lock.synchronize do
-          @strategy.select_connection(@connections)
-        end
+        @strategy.select_connection(@connections)
       end
 
       def each_connection(&callback)
         return self unless block_given?
         raise NotConnectedError unless connected?
-        @lock.synchronize do
-          @connections.each(&callback)
-        end
+        @connections.each(&callback)
       end
       alias_method :each, :each_connection
     end
