@@ -31,7 +31,7 @@ module Cql
         it 'stops managing the connection when the connection closes' do
           manager.add_connections(connections)
           connections.each { |c| c.closed_listener.call }
-          expect { manager.random_connection }.to raise_error(NotConnectedError)
+          expect { manager.connection }.to raise_error(NotConnectedError)
         end
       end
 
@@ -55,18 +55,18 @@ module Cql
         end
       end
 
-      describe '#random_connection' do
+      describe '#connection' do
         before do
           connections.each { |c| c.stub(:on_closed) }
         end
 
         it 'returns one of the connections it is managing' do
           manager.add_connections(connections)
-          connections.should include(manager.random_connection)
+          connections.should include(manager.connection)
         end
 
         it 'raises a NotConnectedError when there are no connections' do
-          expect { manager.random_connection }.to raise_error(NotConnectedError)
+          expect { manager.connection }.to raise_error(NotConnectedError)
         end
       end
 

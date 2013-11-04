@@ -24,7 +24,7 @@ module Cql
       end
 
       def execute(*args)
-        connection = @connection_manager.random_connection
+        connection = @connection_manager.connection
         if connection[self]
           run(args, connection)
         else

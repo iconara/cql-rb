@@ -35,7 +35,7 @@ module Cql
             f = @connection_helper.connect(@hosts, @initial_keyspace)
             f.on_value do |connections|
               @connection_manager.add_connections(connections)
-              register_event_listener(@connection_manager.random_connection)
+              register_event_listener(@connection_manager.connection)
             end
             f.map { self }
           end
@@ -69,7 +69,7 @@ module Cql
       end
 
       def keyspace
-        @connection_manager.random_connection.keyspace
+        @connection_manager.connection.keyspace
       end
 
       def use(keyspace)
@@ -169,7 +169,7 @@ module Cql
         connection.on_closed do
           if connected?
             begin
-              register_event_listener(@connection_manager.random_connection)
+              register_event_listener(@connection_manager.connection)
             rescue NotConnectedError
               # we had started closing down after the connection check
             end
@@ -213,7 +213,7 @@ module Cql
       end
 
       def execute_request(request, timeout=nil, connection=nil)
-        f = @request_runner.execute(connection || @connection_manager.random_connection, request, timeout)
+        f = @request_runner.execute(connection || @connection_manager.connection, request, timeout)
         f.map do |result|
           if result.is_a?(KeyspaceChanged)
             use(result.keyspace)

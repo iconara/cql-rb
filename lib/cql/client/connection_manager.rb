@@ -36,7 +36,7 @@ module Cql
         end
       end
 
-      def random_connection
+      def connection
         raise NotConnectedError unless connected?
         @lock.synchronize do
           @connections.sample
