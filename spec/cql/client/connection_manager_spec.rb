@@ -60,13 +60,31 @@ module Cql
           connections.each { |c| c.stub(:on_closed) }
         end
 
-        it 'returns one of the connections it is managing' do
-          manager.add_connections(connections)
-          connections.should include(manager.connection)
-        end
-
         it 'raises a NotConnectedError when there are no connections' do
           expect { manager.connection }.to raise_error(NotConnectedError)
+        end
+
+        context 'when using the default strategy' do
+          it 'returns one of the connections it is managing' do
+            manager.add_connections(connections)
+            connections.should include(manager.connection)
+          end
+        end
+
+        context 'when using a custom strategy' do
+          let :manager do
+            described_class.new(strategy)
+          end
+
+          let :strategy do
+            double(:strategy)
+          end
+
+          it 'asks the strategy which connection to use' do
+            manager.add_connections(connections)
+            strategy.stub(:select_connection).with(connections).and_return(connections[1])
+            manager.connection.should == connections[1]
+          end
         end
       end
 

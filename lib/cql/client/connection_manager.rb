@@ -6,7 +6,8 @@ module Cql
     class ConnectionManager
       include Enumerable
 
-      def initialize
+      def initialize(strategy=RandomConnectionSelectionStrategy.new)
+        @strategy = strategy
         @connections = []
         @lock = Mutex.new
       end
@@ -39,7 +40,7 @@ module Cql
       def connection
         raise NotConnectedError unless connected?
         @lock.synchronize do
-          @connections.sample
+          @strategy.select_connection(@connections)
         end
       end
 
@@ -51,6 +52,12 @@ module Cql
         end
       end
       alias_method :each, :each_connection
+    end
+  end
+
+  class RandomConnectionSelectionStrategy
+    def select_connection(connections)
+      connections.sample
     end
   end
 end
