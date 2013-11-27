@@ -6,7 +6,8 @@ module Cql
     class AsynchronousClient < Client
       def initialize(options={})
         @logger = options[:logger] || NullLogger.new
-        @io_reactor = options[:io_reactor] || Io::IoReactor.new(Protocol::CqlProtocolHandler)
+        enable_compression = options[:enable_compression] || false
+        @io_reactor = options[:io_reactor] || Io::IoReactor.new(Protocol::CqlProtocolHandler, {:enable_compression => enable_compression})
         @hosts = extract_hosts(options)
         @initial_keyspace = options[:keyspace]
         @lock = Mutex.new
@@ -22,7 +23,7 @@ module Cql
         connection_timeout = options[:connection_timeout] || DEFAULT_CONNECTION_TIMEOUT
         default_consistency = options[:default_consistency] || DEFAULT_CONSISTENCY
         @execute_options_decoder = ExecuteOptionsDecoder.new(default_consistency)
-        @connection_helper = ConnectionHelper.new(@io_reactor, port, credentials, connections_per_node, connection_timeout, @logger)
+        @connection_helper = ConnectionHelper.new(@io_reactor, port, credentials, connections_per_node, connection_timeout, enable_compression, @logger)
       end
 
       def connect

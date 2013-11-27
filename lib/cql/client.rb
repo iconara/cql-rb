@@ -92,6 +92,8 @@ module Cql
     #   significant events pass an object implementing the standard Ruby logger
     #   interface (e.g. quacks like `Logger` from the standard library) with
     #   this option.
+    # @option options [Boolean] :enable_compression Set to true to use LZ4
+    #   frame compression.
     # @raise Cql::Io::ConnectionError when a connection couldn't be established
     #   to any node
     # @return [Cql::Client::Client]

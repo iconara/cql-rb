@@ -1,4 +1,5 @@
 # encoding: utf-8
+require 'lz4-ruby'
 
 module Cql
   module Protocol
@@ -58,11 +59,12 @@ module Cql
             raise UnsupportedOperationError, "The operation #{@headers.opcode} is not supported"
           end
         end
-        FrameBody.new(@headers.buffer, @headers.length, body_type)
+        compressed = (@headers.flags & 0x01) == 0x01
+        FrameBody.new(@headers.buffer, @headers.length, body_type, compressed)
       end
 
       class FrameHeaders
-        attr_reader :buffer, :protocol_version, :stream_id, :opcode, :length
+        attr_reader :buffer, :protocol_version, :stream_id, :opcode, :length, :flags
 
         def initialize(buffer)
           @buffer = buffer
@@ -96,10 +98,11 @@ module Cql
       class FrameBody
         attr_reader :response, :buffer
 
-        def initialize(buffer, length, type)
+        def initialize(buffer, length, type, compressed)
           @buffer = buffer
           @length = length
           @type = type
+          @compressed = compressed
           check_complete!
         end
 
@@ -116,6 +119,28 @@ module Cql
 
         def check_complete!
           if @buffer.length >= @length
+            if @compressed and @length >= 5
+              uncompressedLength = @buffer.read_int
+              @length -= 4
+              body = @buffer.read(@length)
+              if body.length == 0
+                body = "\x00\x00"
+                uncompressedLength = 0
+              end
+              begin
+                body = LZ4Internal::uncompress(body, body.length, 0, uncompressedLength)
+              rescue => e
+                puts $!.inspect, $@
+                puts body.length, body.bytesize, @length, uncompressedLength
+                exit 1
+              end
+              if body.length != uncompressedLength
+                raise DecodingError, "Uncompressed length did not match expected value."
+              end
+              @buffer.discard(@buffer.length)
+              @buffer << body
+              @length = body.length
+            end
             extra_length = @buffer.length - @length
             @response = @type.decode!(@buffer)
             if @buffer.length > extra_length

@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.summary       = %q{Cassandra CQL3 driver}
   s.description   = %q{A pure Ruby CQL3 driver for Cassandra}
   s.license       = 'Apache License 2.0'
-  
+
   s.files         = Dir['lib/**/*.rb', 'bin/*', 'README.md']
   s.test_files    = Dir['spec/**/*.rb']
   s.require_paths = %w(lib)
@@ -22,4 +22,6 @@ Gem::Specification.new do |s|
 
   s.platform = Gem::Platform::RUBY
   s.required_ruby_version = '>= 1.9.2'
+
+  s.add_dependency 'lz4-ruby'
 end
