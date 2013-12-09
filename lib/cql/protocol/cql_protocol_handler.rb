@@ -19,9 +19,10 @@ module Cql
       # @return [String] the current keyspace for the underlying connection
       attr_reader :keyspace
 
-      def initialize(connection, scheduler)
+      def initialize(connection, scheduler, enable_compression)
         @connection = connection
         @scheduler = scheduler
+		@enable_compression = enable_compression
         @connection.on_data(&method(:receive_data))
         @connection.on_closed(&method(:socket_closed))
         @promises = Array.new(128) { nil }
@@ -122,7 +123,7 @@ module Cql
         end
         if id
           @connection.write do |buffer|
-            request.encode_frame(id, buffer)
+            request.encode_frame(id, buffer, @enable_compression)
           end
         else
           @lock.synchronize do

@@ -148,7 +148,7 @@ module Cql
       # You can either pass in bytes (as a string or as a `ByteBuffer`), or you
       # can use the block form of this method to get access to the connection's
       # internal buffer.
-      # 
+      #
       # @yieldparam buffer [Cql::ByteBuffer] the connection's internal buffer
       # @param bytes [String, Cql::ByteBuffer] the data to write to the socket
       #

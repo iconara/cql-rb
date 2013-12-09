@@ -85,11 +85,12 @@ module Cql
       #
       # @param protocol_handler_factory [Object] a class that will be used
       #   create the protocol handler objects returned by {#connect}
-      # @param options [Hash] only used to inject behaviour during tests
+      # @param options [Hash]
       #
       def initialize(protocol_handler_factory, options={})
         @protocol_handler_factory = protocol_handler_factory
         @clock = options[:clock] || Time
+		@enable_compression = options[:enable_compression]
         @unblocker = Unblocker.new
         @io_loop = IoLoopBody.new(options)
         @io_loop.add_socket(@unblocker)
@@ -184,7 +185,7 @@ module Cql
       def connect(host, port, timeout)
         connection = Connection.new(host, port, timeout, @unblocker, @clock)
         f = connection.connect
-        protocol_handler = @protocol_handler_factory.new(connection, self)
+        protocol_handler = @protocol_handler_factory.new(connection, self, @enable_compression)
         @io_loop.add_socket(connection)
         @unblocker.unblock!
         f.map { protocol_handler }
