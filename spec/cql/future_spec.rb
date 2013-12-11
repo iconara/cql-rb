@@ -685,5 +685,82 @@ module Cql
         end
       end
     end
+
+    describe '.traverse' do
+      pending 'combines Array#map and Future.all' do
+        future = Future.traverse([1, 2, 3]) do |element|
+          Future.resolved(element * 2)
+        end
+        future.value.should == [2, 4, 6]
+      end
+
+      pending 'fails if any of the source futures fail' do
+        future = Future.traverse([1, 2, 3]) do |element|
+          if element == 2
+            Future.failed(StandardError.new('BORK'))
+          else
+            Future.resolved(element * 2)
+          end
+        end
+        future.should be_failed
+      end
+
+      pending 'fails if any of the block invocations fail' do
+        future = Future.traverse([1, 2, 3]) do |element|
+          if element == 2
+            raise 'BORK'
+          else
+            Future.resolved(element * 2)
+          end
+        end
+        future.should be_failed
+      end
+    end
+
+    describe '.reduce' do
+      pending 'returns a future which represents the value of reducing the values of the inputs' do
+        futures = [
+          Future.resolved({'foo' => 'bar'}),
+          Future.resolved({'qux' => 'baz'}),
+          Future.resolved({'hello' => 'world'})
+        ]
+        future = Future.reduce(futures, {}) do |accumulator, value|
+          accumulator.merge(value)
+        end
+        future.value.should == {'foo' => 'bar', 'qux' => 'baz', 'hello' => 'world'}
+      end
+
+      pending 'calls the block with the values in order of completion' do
+        promises = [Promise.new, Promise.new, Promise.new]
+        futures = promises.map(&:future)
+        future = Future.reduce(futures, []) do |accumulator, value|
+          accumulator.push(value)
+        end
+        promises[1].fulfill(1)
+        promises[0].fulfill(0)
+        promises[2].fulfill(2)
+        future.value.should == [1, 0, 2]
+      end
+
+      pending 'fails if any of the source futures fail' do
+        futures = [Future.resolved(0), Future.failed(StandardError.new('BORK')), Future.resolved(2)]
+        future = Future.reduce(futures, []) do |accumulator, value|
+          accumulator.push(value)
+        end
+        future.should be_failed
+      end
+
+      pending 'fails if any of the block invocations fail' do
+        futures = [Future.resolved(0), Future.resolved(1), Future.resolved(2)]
+        future = Future.reduce(futures, []) do |accumulator, value|
+          if value == 2
+            raise 'BORK'
+          else
+            accumulator.push(value)
+          end
+        end
+        future.should be_failed
+      end
+    end
   end
 end

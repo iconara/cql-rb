@@ -25,4 +25,14 @@ unless ENV['COVERAGE'] == 'no' || RUBY_ENGINE == 'rbx'
   end
 end
 
+module RunPending
+  def pending(*args, &block)
+    it(*args) { pending(&block) }
+  end
+end
+
+RSpec.configure do |c|
+  c.extend(RunPending)
+end
+
 require 'cql'
