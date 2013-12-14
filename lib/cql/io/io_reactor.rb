@@ -234,8 +234,17 @@ module Cql
         end
       end
 
-      def read
-        @out.read_nonblock(2**16)
+      if RbConfig::CONFIG['host_os'] =~ /mswin|mingw/ && RbConfig::CONFIG['ruby_install_name'] != 'jruby'
+        def read
+          # Windows does not support #read_nonblock on non-Sockets, so we need to use #readpartial.
+          # This should be OK since #read is never called unless IO.select says the pipe is readable.
+          # see https://bugs.ruby-lang.org/issues/5954
+          @out.readpartial(2**16)
+        end
+      else
+        def read
+          @out.read_nonblock(2**16)
+        end
       end
 
       def close
