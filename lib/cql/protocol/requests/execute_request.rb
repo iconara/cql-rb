@@ -3,20 +3,35 @@
 module Cql
   module Protocol
     class ExecuteRequest < Request
-      attr_reader :id, :metadata, :values, :consistency
+      attr_reader :id, :metadata, :values, :consistency, :request_metadata
 
-      def initialize(id, metadata, values, consistency, trace=false)
+      def initialize(id, metadata, values, consistency, request_metadata, trace=false)
         raise ArgumentError, "Metadata for #{metadata.size} columns, but #{values.size} values given" if metadata.size != values.size
         super(10, trace)
         @id = id
         @metadata = metadata
         @values = values
         @consistency = consistency
-        @bytes = encode_body
+        @request_metadata = request_metadata
+        @encoded_values = self.class.encode_values('', @metadata, @values)
       end
 
-      def write(io)
-        io << @bytes
+      def write(protocol_version, io)
+        write_short_bytes(io, @id)
+        if protocol_version > 1
+          write_consistency(io, @consistency)
+          flags = 0
+          flags |= @values.size > 0 ? 1 : 0
+          flags |= @request_metadata ? 0 : 2
+          io << flags.chr
+          if @values.size > 0
+            io << @encoded_values
+          end
+          io
+        else
+          io << @encoded_values
+          write_consistency(io, @consistency)
+        end
       end
 
       def to_s
@@ -40,19 +55,17 @@ module Cql
         end
       end
 
+      def self.encode_values(buffer, metadata, values)
+        Encoding.write_short(buffer, metadata.size)
+        metadata.each_with_index do |(_, _, _, type), index|
+          TYPE_CONVERTER.to_bytes(buffer, type, values[index])
+        end
+        buffer
+      end
+
       private
 
-      def encode_body
-        buffer = ByteBuffer.new
-        type_converter = TypeConverter.new
-        write_short_bytes(buffer, @id)
-        write_short(buffer, @metadata.size)
-        @metadata.each_with_index do |(_, _, _, type), index|
-          type_converter.to_bytes(buffer, type, @values[index])
-        end
-        write_consistency(buffer, @consistency)
-        buffer.to_s
-      end
+      TYPE_CONVERTER = TypeConverter.new
     end
   end
 end

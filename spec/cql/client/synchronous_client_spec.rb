@@ -81,7 +81,8 @@ module Cql
         it 'calls #prepare on the async client, waits for the result and returns a SynchronousFuture' do
           result = double(:result)
           metadata = double(:metadata)
-          async_statement = double(:async_statement, metadata: metadata)
+          result_metadata = double(:result_metadata)
+          async_statement = double(:async_statement, metadata: metadata, result_metadata: result_metadata)
           another_future = double(:another_future)
           async_client.stub(:prepare).with('SELECT * FROM something').and_return(future)
           future.stub(:value).and_return(async_statement)
@@ -90,6 +91,36 @@ module Cql
           another_future.stub(:value).and_return(result)
           statement.execute.should equal(result)
           statement.metadata.should equal(metadata)
+        end
+      end
+
+      describe '#batch' do
+        let :batch do
+          double(:batch)
+        end
+
+        context 'when called without a block' do
+          it 'delegates to the asynchronous client and wraps the returned object in a synchronous wrapper' do
+            async_client.stub(:batch).with(:unlogged, trace: true).and_return(batch)
+            batch.stub(:execute).and_return(Cql::Future.resolved(VoidResult.new))
+            b = client.batch(:unlogged, trace: true)
+            b.execute.should be_a(VoidResult)
+          end
+        end
+
+        context 'when called with a block' do
+          it 'delegates to the asynchronous client' do
+            async_client.stub(:batch).with(:counter, trace: true).and_yield(batch).and_return(Cql::Future.resolved(VoidResult.new))
+            yielded_batch = nil
+            client.batch(:counter, trace: true) { |b| yielded_batch = b }
+            yielded_batch.should equal(batch)
+          end
+
+          it 'waits for the operation to complete' do
+            async_client.stub(:batch).with(:counter, {}).and_yield(batch).and_return(Cql::Future.resolved(VoidResult.new))
+            result = client.batch(:counter) { |b| }
+            result.should be_a(VoidResult)
+          end
         end
       end
 
