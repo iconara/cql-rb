@@ -5,7 +5,7 @@ module Cql
     class QueryRequest < Request
       attr_reader :cql, :consistency
 
-      def initialize(cql, values, type_hints, consistency, serial_consistency=nil, trace=false)
+      def initialize(cql, values, type_hints, consistency, serial_consistency=nil, trace=false, result_page_size=nil, paging_state=nil)
         raise ArgumentError, %(No CQL given!) unless cql
         raise ArgumentError, %(No such consistency: #{consistency.inspect}) if consistency.nil? || !CONSISTENCIES.include?(consistency)
         raise ArgumentError, %(No such consistency: #{serial_consistency.inspect}) unless serial_consistency.nil? || CONSISTENCIES.include?(serial_consistency)
@@ -16,21 +16,23 @@ module Cql
         @encoded_values = self.class.encode_values('', values, type_hints)
         @consistency = consistency
         @serial_consistency = serial_consistency
+        @result_page_size = result_page_size
+        @paging_state = paging_state
       end
 
       def write(protocol_version, io)
         write_long_string(io, @cql)
         write_consistency(io, @consistency)
         if protocol_version > 1
-          flags  = 0
-          flags |= 0x10 if @serial_consistency
-          if @values.size > 0
-            flags |= 0x01
-            io << flags.chr
-            io << @encoded_values
-          else
-            io << flags.chr
-          end
+          flags = NO_FLAGS
+          flags |= VALUES_FLAG if @values.size > 0
+          flags |= PAGE_SIZE_FLAG if @result_page_size
+          flags |= WITH_PAGING_STATE_FLAG if @paging_state
+          flags |= WITH_SERIAL_CONSISTENCY_FLAG if @serial_consistency
+          io << flags.chr
+          io << @encoded_values if @values.size > 0
+          write_int(io, @result_page_size) if @result_page_size
+          write_bytes(io, @paging_state) if @paging_state
           write_consistency(io, @serial_consistency) if @serial_consistency
         end
         io
@@ -100,7 +102,11 @@ module Cql
       TYPE_CONVERTER = TypeConverter.new
       NO_VALUES = [].freeze
       NO_HINTS = [].freeze
-      NO_FLAGS = "\x00".freeze
+      NO_FLAGS = 0x00
+      VALUES_FLAG = 0x01
+      PAGE_SIZE_FLAG = 0x04
+      WITH_PAGING_STATE_FLAG = 0x08
+      WITH_SERIAL_CONSISTENCY_FLAG = 0x10
     end
   end
 end

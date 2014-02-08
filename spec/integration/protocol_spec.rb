@@ -540,6 +540,31 @@ describe 'Protocol parsing and communication' do
           end
         end
       end
+
+      context 'with paging' do
+        it 'sends a SELECT command with result_page_size and receives paged result' do
+          in_keyspace_with_table do
+            query(%<INSERT INTO users (user_name, email) VALUES ('phil', 'phil@heck.com')>)
+            query(%<INSERT INTO users (user_name, email) VALUES ('sue', 'sue@inter.net')>)
+            query(%<INSERT INTO users (user_name, email) VALUES ('zoe', 'zoe@inter.net')>)
+
+            response = execute_request(Cql::Protocol::QueryRequest.new(%<SELECT * FROM users>, nil, nil, :quorum, nil, false, 2))
+            response.paging_state.should_not be_nil
+            response.should have(2).rows
+            # response.rows.should == [
+            #   {'user_name' => 'phil', 'email' => 'phil@heck.com', 'password' => nil},
+            #   {'user_name' => 'sue', 'email' => 'sue@inter.net', 'password' => nil}
+            # ]
+
+            response2 = execute_request(Cql::Protocol::QueryRequest.new(%<SELECT * FROM users>, nil, nil, :quorum, nil, false, 2, response.paging_state))
+            response2.paging_state.should be_nil
+            response2.should have(1).rows
+            # response2.rows.should == [
+            #   {'user_name' => 'zoe', 'email' => 'zoe@inter.net', 'password' => nil}
+            # ]
+          end
+        end
+      end
     end
   end
 

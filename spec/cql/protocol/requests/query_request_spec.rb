@@ -147,6 +147,32 @@ module Cql
               frame_bytes.to_s[46, 2].should == "\x00\x08"
             end
           end
+
+          context 'and there is paging' do
+            let :frame_bytes do
+              QueryRequest.new('SELECT * FROM users', [], nil, :all, nil, false, 1000, 'foobar').write(2, '')
+            end
+
+            it 'encodes the CQL' do
+              frame_bytes.to_s[0, 23].should == "\x00\x00\x00\x13SELECT * FROM users"
+            end
+
+            it 'encodes the consistency' do
+              frame_bytes.to_s[23, 2].should == "\x00\x05"
+            end
+
+            it 'encodes page_size and with_paging_state flags' do
+              frame_bytes.to_s[25, 1].should == "\x0c"
+            end
+
+            it 'encodes result_page_size' do
+              frame_bytes.to_s[26, 4].should == "\x00\x00\x03\xE8"
+            end
+
+            it 'encodes page_state' do
+              frame_bytes.to_s[30, 10].should == "\x00\x00\x00\x06foobar"
+            end
+          end
         end
 
         context 'with multibyte characters' do
