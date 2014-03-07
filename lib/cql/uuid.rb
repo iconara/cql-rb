@@ -37,6 +37,7 @@ module Cql
         parts.join('-').force_encoding(::Encoding::ASCII)
       end
     end
+    alias_method :to_guid, :to_s
 
     def hash
       @h ||= 0x7fffffffffffffff - ((@n & 0xffffffffffffffff) ^ ((@n >> 64) & 0xffffffffffffffff))
@@ -49,6 +50,7 @@ module Cql
     def value
       @n
     end
+    alias_method :to_i, :value
 
     # @private
     def eql?(other)

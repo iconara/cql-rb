@@ -58,6 +58,12 @@ module Cql
       end
     end
 
+    describe '#to_guid' do
+      it 'returns a UUID standard format' do
+        Uuid.new('a4a70900-24e1-11df-8924-001ff3591711').to_guid.should == 'a4a70900-24e1-11df-8924-001ff3591711'
+      end
+    end
+
     describe '#hash' do
       it 'calculates a 64 bit hash of the UUID' do
         h = Uuid.new(162917432198567078063626261009205865234).hash
@@ -81,6 +87,12 @@ module Cql
     describe '#value' do
       it 'returns the numeric value' do
         Uuid.new('cfd66ccc-d857-4e90-b1e5-df98a3d40cd6').value.should == 276263553384940695775376958868900023510
+      end
+    end
+
+    describe '#to_i' do
+      it 'returns the numeric value' do
+        Uuid.new('cfd66ccc-d857-4e90-b1e5-df98a3d40cd6').to_i.should == 276263553384940695775376958868900023510
       end
     end
   end
