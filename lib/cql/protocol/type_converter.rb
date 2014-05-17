@@ -43,7 +43,7 @@ module Cql
           when :list, :set
             _, sub_type = type
             if value
-              raw = ''
+              raw = ByteBuffer.new
               write_short(raw, value.size)
               value.each do |element|
                 to_bytes(raw, sub_type, element, 2)
@@ -55,7 +55,7 @@ module Cql
           when :map
             _, key_type, value_type = type
             if value
-              raw = ''
+              raw = ByteBuffer.new
               write_short(raw, value.size)
               value.each do |key, value|
                 to_bytes(raw, key_type, key, 2)
