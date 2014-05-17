@@ -7,7 +7,11 @@ module Cql
   module Client
     describe PeerDiscovery do
       let :peer_discovery do
-        described_class.new(seed_connections)
+        described_class.new(seed_connections, connection_strategy)
+      end
+
+      let :connection_strategy do
+        double(:connection_strategy)
       end
 
       describe '#new_hosts' do
@@ -50,6 +54,10 @@ module Cql
           end
         end
 
+        before do
+          connection_strategy.stub(:connect?).and_return(true)
+        end
+
         it 'selects all rows from the "peers" system table' do
           peer_discovery.new_hosts.value
           selected_connection = seed_connections.find { |c| c.requests.any? }
@@ -81,8 +89,8 @@ module Cql
           new_hosts.value.should == %w[2.0.0.3 2.0.0.4]
         end
 
-        it 'only returns addresses to nodes that are in the same data centers as the seed nodes' do
-          peer_rows[3]['data_center'] = 'dc1'
+        it 'does not return any addresses of peers that the connection strategy says no to' do
+          connection_strategy.stub(:connect?).with(peer_rows[3]).and_return(false)
           new_hosts = peer_discovery.new_hosts
           new_hosts.value.should == %w[1.0.0.4]
         end

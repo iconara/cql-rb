@@ -240,6 +240,7 @@ module Cql
           @connected_future = begin
             f = @io_reactor.start
             f = f.flat_map { connect_with_protocol_version_fallback }
+            f.on_value { |connections| create_default_connection_strategy(connections) }
             f = f.flat_map { |connections| connect_to_all_peers(connections) }
             f = f.flat_map do |connections|
               @connection_manager.add_connections(connections)
@@ -375,9 +376,15 @@ module Cql
         end
       end
 
+      def create_default_connection_strategy(connections)
+        data_centers = connections.map { |c| c[:data_center] }
+        data_centers.uniq!
+        @connection_strategy = DataCenterAwareConnectionStrategy.new(data_centers)
+      end
+
       def connect_to_all_peers(seed_connections, initial_keyspace=@initial_keyspace)
         @logger.debug('Looking for additional nodes')
-        peer_discovery = PeerDiscovery.new(seed_connections)
+        peer_discovery = PeerDiscovery.new(seed_connections, @connection_strategy)
         peer_discovery.new_hosts.flat_map do |hosts|
           if hosts.empty?
             @logger.debug('No additional nodes found')
