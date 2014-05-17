@@ -98,7 +98,7 @@ module Cql
         end
 
         let :min_peers do
-          [2]
+          2
         end
 
         before do
@@ -120,7 +120,7 @@ module Cql
                   Protocol::RowsResultResponse.new([row], local_metadata, nil, nil)
                 when /FROM system\.peers/
                   other_host_ids = connections.reject { |c| c[:spec_host_id] == connection[:spec_host_id] }.map { |c| c[:spec_host_id] }
-                  until other_host_ids.size >= min_peers[0]
+                  until other_host_ids.size >= min_peers
                     other_host_ids << uuid_generator.next
                   end
                   rows = other_host_ids.map do |host_id|
@@ -489,6 +489,22 @@ module Cql
             use_keyspace_requests.should have(3).items
             use_keyspace_requests.each do |rq|
               rq.cql.should match(/USE foo/)
+            end
+          end
+
+          context 'with a custom connection strategy' do
+            let :min_peers do
+              5
+            end
+
+            it 'connects only to the peers that the connection strategy selects' do
+              strategy = double(:connection_strategy)
+              strategy.stub(:connect?) do |peer_info|
+                peer_info['peer'] != additional_nodes.first
+              end
+              c = described_class.new(connection_options.merge(hosts: %w[host1 host2], connection_strategy: strategy))
+              c.connect.value
+              connections.should have(min_peers + 2 - 1).items
             end
           end
         end
@@ -1300,6 +1316,23 @@ module Cql
           event = Protocol::TopologyChangeEventResponse.new('NEW_NODE', IPAddr.new('1.1.1.1'), 9999)
           connections.select(&:has_event_listener?).first.trigger_event(event)
           connections.select(&:connected?).should have(3).items
+        end
+
+        context 'with a custom connection strategy' do
+          it 'connects only to the peers that the connection strategy selects' do
+            client.close.value
+            n = 0
+            strategy = double(:connection_strategy)
+            strategy.stub(:connect?) do |peer_info|
+              n += 1
+              n < 3
+            end
+            c = described_class.new(connection_options.merge(hosts: %w[host1 host2 host3], connection_strategy: strategy))
+            c.connect.value
+            event = Protocol::TopologyChangeEventResponse.new('NEW_NODE', IPAddr.new('9.9.9.9'), 9999)
+            connections.select(&:has_event_listener?).first.trigger_event(event)
+            connections.select(&:connected?).should have(5).items
+          end
         end
 
         it 'makes sure the new connections use the same keyspace as the existing' do

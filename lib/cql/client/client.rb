@@ -218,6 +218,7 @@ module Cql
         @hosts = extract_hosts(options)
         @initial_keyspace = options[:keyspace]
         @connections_per_node = options[:connections_per_node] || 1
+        @connection_strategy = options[:connection_strategy]
         @lock = Mutex.new
         @request_runner = RequestRunner.new
         @keyspace_changer = KeyspaceChanger.new
@@ -240,7 +241,7 @@ module Cql
           @connected_future = begin
             f = @io_reactor.start
             f = f.flat_map { connect_with_protocol_version_fallback }
-            f.on_value { |connections| create_default_connection_strategy(connections) }
+            f.on_value { |connections| @connection_strategy || create_default_connection_strategy(connections) }
             f = f.flat_map { |connections| connect_to_all_peers(connections) }
             f = f.flat_map do |connections|
               @connection_manager.add_connections(connections)
