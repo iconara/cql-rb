@@ -1,3 +1,10 @@
+GIT
+  remote: git://github.com/iconara/ione.git
+  revision: f59c02b3b1368d24bc1d96ff3b4518f2f93aa56a
+  branch: ssl_support
+  specs:
+    ione (1.1.0)
+
 PATH
   remote: .
   specs:
@@ -16,7 +23,6 @@ GEM
       simplecov (>= 0.7)
       thor
     diff-lcs (1.2.4)
-    ione (1.0.0)
     method_source (0.8.1)
     mime-types (1.23)
     multi_json (1.7.7)
@@ -62,6 +68,7 @@ PLATFORMS
 DEPENDENCIES
   coveralls
   cql-rb!
+  ione!
   perftools.rb
   pry
   rake

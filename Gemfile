@@ -4,6 +4,7 @@ gemspec
 
 gem 'rake'
 gem 'snappy'
+gem 'ione', github: 'iconara/ione', branch: 'ssl_support'
 
 group :development do
   gem 'pry'
