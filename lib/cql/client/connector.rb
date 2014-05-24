@@ -72,17 +72,17 @@ module Cql
 
     # @private
     class ConnectStep
-      def initialize(io_reactor, protocol_handler_factory, port, connection_timeout, logger)
+      def initialize(io_reactor, protocol_handler_factory, port, connection_options, logger)
         @io_reactor = io_reactor
         @protocol_handler_factory = protocol_handler_factory
         @port = port
-        @connection_timeout = connection_timeout
+        @connection_options = connection_options
         @logger = logger
       end
 
       def run(pending_connection)
         @logger.debug('Connecting to node at %s:%d' % [pending_connection.host, @port])
-        @io_reactor.connect(pending_connection.host, @port, @connection_timeout, &@protocol_handler_factory).map do |connection|
+        @io_reactor.connect(pending_connection.host, @port, @connection_options, &@protocol_handler_factory).map do |connection|
           pending_connection.with_connection(connection)
         end
       end
