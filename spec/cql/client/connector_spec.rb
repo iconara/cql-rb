@@ -204,7 +204,11 @@ module Cql
 
     describe ConnectStep do
       let :step do
-        described_class.new(io_reactor, protocol_handler_factory, 1111, 9, logger)
+        described_class.new(io_reactor, protocol_handler_factory, 1111, connection_options, logger)
+      end
+
+      let :connection_options do
+        {:timeout => 8}
       end
 
       let :pending_connection do
@@ -246,7 +250,7 @@ module Cql
 
         it 'connects using the connection details given' do
           step.run(pending_connection)
-          io_reactor.should have_received(:connect).with('example.com', 1111, 9)
+          io_reactor.should have_received(:connect).with('example.com', 1111, connection_options)
         end
 
         it 'appends the connection to the given argument and returns the result' do

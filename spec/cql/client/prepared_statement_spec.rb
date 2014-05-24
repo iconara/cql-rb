@@ -55,9 +55,9 @@ module Cql
 
       let :connections do
         [
-          FakeConnection.new('h0.example.com', 1234, 42),
-          FakeConnection.new('h1.example.com', 1234, 42),
-          FakeConnection.new('h2.example.com', 1234, 42),
+          FakeConnection.new('h0.example.com', 1234),
+          FakeConnection.new('h1.example.com', 1234),
+          FakeConnection.new('h2.example.com', 1234),
         ]
       end
 
@@ -242,7 +242,7 @@ module Cql
 
         context 'when it receives a new connection from the connection manager' do
           let :new_connection do
-            FakeConnection.new('h3.example.com', 1234, 5)
+            FakeConnection.new('h3.example.com', 1234)
           end
 
           before do

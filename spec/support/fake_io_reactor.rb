@@ -26,13 +26,13 @@ class FakeIoReactor
     @before_startup_handler = handler
   end
 
-  def connect(host, port, timeout)
+  def connect(host, port, options)
     if host == '0.0.0.0'
       Cql::Future.failed(Cql::Io::ConnectionError.new('Can\'t connect to 0.0.0.0'))
     elsif @down_nodes.include?(host)
       Cql::Future.failed(Cql::Io::ConnectionError.new('Node down'))
     else
-      connection = FakeConnection.new(host, port, timeout)
+      connection = FakeConnection.new(host, port, options)
       @connections << connection
       @connection_listeners.each do |listener|
         listener.call(connection)
@@ -71,12 +71,13 @@ class FakeIoReactor
 end
 
 class FakeConnection
-  attr_reader :host, :port, :timeout, :requests, :keyspace
+  attr_reader :host, :port, :timeout, :options, :requests, :keyspace
 
-  def initialize(host, port, timeout, data={})
+  def initialize(host, port, options={}, data={})
     @host = host
     @port = port
-    @timeout = timeout
+    @options = options || {}
+    @timeout = @options[:timeout]
     @requests = []
     @responses = []
     @closed = false
