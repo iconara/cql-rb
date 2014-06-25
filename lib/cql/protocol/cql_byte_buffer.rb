@@ -251,6 +251,9 @@ module Cql
       def append_varint(n)
         num = n
         bytes = []
+
+        bytes << 0 if num == 0
+
         until num == 0
           bytes << (num & 0xff)
           num = num >> 8

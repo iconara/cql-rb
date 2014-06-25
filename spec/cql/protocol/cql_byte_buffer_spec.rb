@@ -810,6 +810,11 @@ module Cql
       end
 
       describe '#append_varint' do
+        it 'encodes zero' do
+          buffer.append_varint(0)
+          buffer.should eql_bytes("\x00")
+        end
+
         it 'encodes a variable length integer' do
           buffer.append_varint(1231312312331283012830129382342342412123)
           buffer.should eql_bytes("\x03\x9EV \x15\f\x03\x9DK\x18\xCDI\\$?\a[")
