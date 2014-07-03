@@ -2,6 +2,7 @@
 
 require 'bigdecimal'
 
+
 module Cql
   module Protocol
     class CqlByteBuffer < Ione::ByteBuffer
