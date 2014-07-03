@@ -843,6 +843,7 @@ module Cql
       end
 
       describe '#append_decimal' do
+        require 'pry'
         it 'encodes a BigDecimal as a decimal' do
           buffer.append_decimal(BigDecimal.new('1042342234234.123423435647768234'))
           buffer.should eql_bytes("\x00\x00\x00\x12\r'\xFDI\xAD\x80f\x11g\xDCfV\xAA")
@@ -851,6 +852,16 @@ module Cql
         it 'encodes a 0.0 BigDecimal' do
           buffer.append_decimal(BigDecimal.new('0.0'))
           buffer.should eql_bytes("\x00\x00\x00\x01\x00")
+        end
+
+        it 'encodes a BigDecimal ending in .0' do
+          buffer.append_decimal(BigDecimal.new('1042342234234.0'))
+          buffer.should eql_bytes("\x00\x00\x00\x01\tz\xE4b\xD4\xC4")
+        end
+
+        it 'appends a BigDecimal ending with 00.0' do
+          buffer.append_decimal(BigDecimal.new('12000.0'))
+          buffer.should eql_bytes("\x00\x00\x00\x01\x01\xD4\xC0")
         end
 
         it 'appends to the buffer' do

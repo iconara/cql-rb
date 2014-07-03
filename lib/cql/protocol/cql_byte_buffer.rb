@@ -2,7 +2,6 @@
 
 require 'bigdecimal'
 
-
 module Cql
   module Protocol
     class CqlByteBuffer < Ione::ByteBuffer
@@ -264,9 +263,12 @@ module Cql
       end
 
       def append_decimal(n)
-        sign, number_string, _, size = n.split
+        str = n.to_s('F')
+        size = str.index('.')
+        number_string = str.gsub('.', '')
+
         num = number_string.to_i
-        raw = self.class.new.append_varint(sign * num)
+        raw = self.class.new.append_varint(num)
         append_int(number_string.length - size)
         append(raw)
       end
