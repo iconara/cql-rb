@@ -81,16 +81,6 @@ module Cql
           buffer.read_decimal.should == BigDecimal.new('-0.0012095473475870063')
         end
 
-        it 'decodes a decimal with .0' do
-          buffer = described_class.new("\x00\x00\x00\x01\tz\xE4b\xD4\xC4")
-          buffer.read_decimal.should == BigDecimal.new('1042342234234.0')
-        end
-
-        it 'decodes a decimal with 00.0' do
-          buffer = described_class.new("\x00\x00\x00\x01\x01\xD4\xC0")
-          buffer.read_decimal.should == BigDecimal.new('12000.0')
-        end
-
         it 'consumes the bytes' do
           buffer << 'HELLO'
           buffer.read_decimal(buffer.length - 5)
@@ -853,6 +843,7 @@ module Cql
       end
 
       describe '#append_decimal' do
+        require 'pry'
         it 'encodes a BigDecimal as a decimal' do
           buffer.append_decimal(BigDecimal.new('1042342234234.123423435647768234'))
           buffer.should eql_bytes("\x00\x00\x00\x12\r'\xFDI\xAD\x80f\x11g\xDCfV\xAA")

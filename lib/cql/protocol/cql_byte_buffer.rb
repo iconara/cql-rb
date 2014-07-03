@@ -40,7 +40,7 @@ module Cql
         else
           fraction_string = number_string[0, number_string.length - size]
           fraction_string << DECIMAL_POINT
-          fraction_string << (number_string[number_string.length - size, number_string.length] || '0')
+          fraction_string << number_string[number_string.length - size, number_string.length]
         end
         BigDecimal.new(fraction_string)
       rescue DecodingError => e
