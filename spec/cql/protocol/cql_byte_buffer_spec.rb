@@ -858,7 +858,7 @@ module Cql
           buffer.should eql_bytes("\x00\x00\x00\x01\tz\xE4b\xD4\xC4")
         end
 
-        it 'appends a BigDecimal ending with 00.0' do
+        it 'encodes a BigDecimal ending with 00.0' do
           buffer.append_decimal(BigDecimal.new('12000.0'))
           buffer.should eql_bytes("\x00\x00\x00\x01\x01\xD4\xC0")
         end
