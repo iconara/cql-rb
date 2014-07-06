@@ -241,7 +241,7 @@ module Cql
       def bytes_to_udt_value(buffer, type)
         value = {}
         type[1].each do |name, subtype|
-          value[name] = from_bytes(buffer, subtype)
+          value[name] = from_bytes(buffer, subtype, 4)
         end
         value
       end
