@@ -12,18 +12,19 @@ module Cql
         @to_bytes_converters = to_bytes_converters
       end
 
-      def from_bytes(buffer, type, size_bytes=4)
+      def from_bytes(buffer, type, size_bytes=4, override_size=false)
         return nil if buffer.empty?
         case type
         when Array
           return nil unless read_size(buffer, size_bytes)
+          size_bytes = override_size ? size_bytes : 2
           case type.first
           when :list
-            bytes_to_list(buffer, type[1])
+            bytes_to_list(buffer, type[1], size_bytes, override_size)
           when :map
-            bytes_to_map(buffer, type[1], type[2])
+            bytes_to_map(buffer, type[1], type[2], size_bytes, override_size)
           when :set
-            bytes_to_set(buffer, type[1])
+            bytes_to_set(buffer, type[1], size_bytes, override_size)
           when :udt
             bytes_to_udt_value(buffer, type)
           when :custom
@@ -209,31 +210,31 @@ module Cql
         IPAddr.new_ntoh(buffer.read(size))
       end
 
-      def bytes_to_list(buffer, subtype)
+      def bytes_to_list(buffer, subtype, size_bytes, override_size)
         list = []
-        size = buffer.read_short
+        size = read_size(buffer, size_bytes)
         size.times do
-          list << from_bytes(buffer, subtype, 2)
+          list << from_bytes(buffer, subtype, size_bytes, override_size)
         end
         list
       end
 
-      def bytes_to_map(buffer, key_type, value_type)
+      def bytes_to_map(buffer, key_type, value_type, size_bytes, override_size)
         map = {}
-        size = buffer.read_short
+        size = read_size(buffer, size_bytes)
         size.times do
-          key = from_bytes(buffer, key_type, 2)
-          value = from_bytes(buffer, value_type, 2)
+          key = from_bytes(buffer, key_type, size_bytes, override_size)
+          value = from_bytes(buffer, value_type, size_bytes, override_size)
           map[key] = value
         end
         map
       end
 
-      def bytes_to_set(buffer, subtype)
+      def bytes_to_set(buffer, subtype, size_bytes, override_size)
         set = Set.new
-        size = buffer.read_short
+        size = read_size(buffer, size_bytes)
         size.times do
-          set << from_bytes(buffer, subtype, 2)
+          set << from_bytes(buffer, subtype, size_bytes, override_size)
         end
         set
       end
@@ -241,7 +242,7 @@ module Cql
       def bytes_to_udt_value(buffer, type)
         value = {}
         type[1].each do |name, subtype|
-          value[name] = from_bytes(buffer, subtype, 4)
+          value[name] = from_bytes(buffer, subtype, 4, true)
         end
         value
       end
