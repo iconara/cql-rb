@@ -43,6 +43,7 @@ end
 
 require 'cql/protocol/cql_byte_buffer'
 require 'cql/protocol/type_converter'
+require 'cql/protocol/custom_type_parser'
 require 'cql/protocol/response'
 require 'cql/protocol/responses/auth_challenge_response'
 require 'cql/protocol/responses/auth_success_response'
