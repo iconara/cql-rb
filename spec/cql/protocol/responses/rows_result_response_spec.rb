@@ -349,8 +349,8 @@ module Cql
             b << "\x00\x00\x00\x01"
             b << "\x00\x00\x00:"
             b << "\x00\x01\x00\vsecret_lair"
-            b << "\x00)\x00"
-            b << "\x00\x00\x104 Some Other St."
+            b << "\x00)"
+            b << "\x00\x00\x00\x104 Some Other St."
             b << "\x00\x00\x00\tGos Latos"
             b << "\x00\x00\x00\x04\x00\x01Vf"
             b
