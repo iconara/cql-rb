@@ -44,9 +44,9 @@ module Cql
             unless value.nil? || value.is_a?(Enumerable)
               raise InvalidValueError, 'Value for collection must be enumerable'
             end
-            size_bytes = override_size ? size_bytes : 2
             _, sub_type = type
             if value
+              size_bytes = override_size ? size_bytes : 2
               raw = CqlByteBuffer.new
               if size_bytes == 2
                 raw.append_short(value.size)
@@ -64,9 +64,9 @@ module Cql
             unless value.nil? || value.is_a?(Enumerable)
               raise InvalidValueError, 'Value for collection must be enumerable'
             end
-            size_bytes = override_size ? size_bytes : 2
             _, key_type, value_type = type
             if value
+              size_bytes = override_size ? size_bytes : 2
               raw = CqlByteBuffer.new
               if size_bytes == 2
                 raw.append_short(value.size)
