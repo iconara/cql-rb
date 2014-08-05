@@ -15,15 +15,15 @@ module Cql
       end
 
       it 'raises an error if the string is shorter than 32 chars' do
-        expect { Uuid.new('a4a7090024e111df8924001ff359171') }.to raise_error(ArgumentError)
+        expect { Uuid.new('a4a7090024e111df8924001ff359171') }.to raise_error(Cql::Uuid::InvalidUuidError)
       end
 
       it 'raises an error if the string is longer than 32 chars' do
-        expect { Uuid.new('a4a7090024e111df8924001ff35917111') }.to raise_error(ArgumentError)
+        expect { Uuid.new('a4a7090024e111df8924001ff35917111') }.to raise_error(Cql::Uuid::InvalidUuidError)
       end
 
       it 'raises an error if the string is not a hexadecimal number' do
-        expect { Uuid.new('a4a7090024e111df8924001ff359171x') }.to raise_error(ArgumentError)
+        expect { Uuid.new('a4a7090024e111df8924001ff359171x') }.to raise_error(Cql::Uuid::InvalidUuidError)
       end
 
       it 'can be created from a number' do
