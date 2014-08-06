@@ -9,13 +9,11 @@ module Cql
   # If you want to generate UUIDs see {Cql::TimeUuid::Generator}.
   #
   class Uuid
-    InvalidUuidError = Class.new(CqlError)
-
     # Creates a new UUID either from a string (expected to be on the standard
     # 8-4-4-4-12 form, or just 32 characters without hyphens), or from a
     # 128 bit number.
     #
-    # @raise [Cql::Uuid::InvalidUuidError] if the string does not conform to the expected format
+    # @raise [InvalidUuidError] if the string does not conform to the expected format
     #
     def initialize(n)
       case n
