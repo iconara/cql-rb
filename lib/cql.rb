@@ -17,9 +17,6 @@ module Cql
   Io = Ione::Io
 end
 
-# TODO: Change the base class for InvalidUuidError to CqlError during the
-# next major release - then remove the CqlArgumentError base class because it
-# is only a placeholder for organizational purposes.
 CqlArgumentError = Class.new(ArgumentError)
 InvalidUuidError = Class.new(CqlArgumentError)
 
