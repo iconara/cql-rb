@@ -224,7 +224,9 @@ module Cql
         @connection_manager = ConnectionManager.new
         @execute_options_decoder = ExecuteOptionsDecoder.new(options[:default_consistency] || DEFAULT_CONSISTENCY)
         @port = options[:port] || DEFAULT_PORT
-        @connection_timeout = options[:connection_timeout] || DEFAULT_CONNECTION_TIMEOUT
+        @connection_options = {}
+        @connection_options[:timeout] = options[:connection_timeout] || DEFAULT_CONNECTION_TIMEOUT
+        @connection_options[:ssl] = options[:ssl] if options[:ssl]
         @credentials = options[:credentials]
         @auth_provider = options[:auth_provider] || @credentials && Auth::PlainTextAuthProvider.new(*@credentials.values_at(:username, :password))
         @connected = false
@@ -352,7 +354,7 @@ module Cql
         protocol_handler_factory = lambda { |connection| Protocol::CqlProtocolHandler.new(connection, @io_reactor, @protocol_version, @compressor) }
         ClusterConnector.new(
           Connector.new([
-            ConnectStep.new(@io_reactor, protocol_handler_factory, @port, @connection_timeout, @logger),
+            ConnectStep.new(@io_reactor, protocol_handler_factory, @port, @connection_options, @logger),
             CacheOptionsStep.new,
             InitializeStep.new(cql_version, @compressor, @logger),
             authentication_step,

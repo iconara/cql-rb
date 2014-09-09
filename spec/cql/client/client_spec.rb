@@ -361,6 +361,13 @@ module Cql
           last_connection.timeout.should == 10
         end
 
+        it 'enables client/node encryption when the :ssl option is set' do
+          ssl_context = double(:ssl_context)
+          client = described_class.new(connection_options.merge(ssl: ssl_context))
+          client.connect.value
+          last_connection.options.should include(ssl: ssl_context)
+        end
+
         it 'is not in a keyspace' do
           client.connect.value
           client.keyspace.should be_nil

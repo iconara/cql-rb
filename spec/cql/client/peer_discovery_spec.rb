@@ -13,9 +13,9 @@ module Cql
       describe '#new_hosts' do
         let :seed_connections do
           [
-            FakeConnection.new('host0', 9042, 5, {:data_center => 'dc0', :host_id => Uuid.new('00000000-0000-0000-0000-000000000000')}),
-            FakeConnection.new('host1', 9042, 5, {:data_center => 'dc0', :host_id => Uuid.new('11111111-1111-1111-1111-111111111111')}),
-            FakeConnection.new('host2', 9042, 5, {:data_center => 'dc0', :host_id => Uuid.new('22222222-2222-2222-2222-222222222222')}),
+            FakeConnection.new('host0', 9042, {}, {:data_center => 'dc0', :host_id => Uuid.new('00000000-0000-0000-0000-000000000000')}),
+            FakeConnection.new('host1', 9042, {}, {:data_center => 'dc0', :host_id => Uuid.new('11111111-1111-1111-1111-111111111111')}),
+            FakeConnection.new('host2', 9042, {}, {:data_center => 'dc0', :host_id => Uuid.new('22222222-2222-2222-2222-222222222222')}),
           ]
         end
 
