@@ -1,3 +1,15 @@
+# This is not the Cassandra driver you are looking for
+
+cql-rb has graduated from community driver to being the foundation of the official [Datastax Ruby Driver for Apache Cassandra](https://github.com/datastax/ruby-driver).
+
+There will be no more development in this repository, with the exception of critical bug fixes. I encourage everyone to start migrating to the new driver as soon as you can, it's got some great new features that you should try out.
+
+The cql-rb code and the old readme will remain here as legacy documentation.
+
+Read [the announcement of the new Ruby driver](http://www.datastax.com/dev/blog/ruby-driver-beta-1-release) or [the documentation with all the new features](http://datastax.github.io/ruby-driver/).
+
+---
+
 # Ruby CQL3 driver
 
 [![Build Status](https://travis-ci.org/iconara/cql-rb.png?branch=master)](https://travis-ci.org/iconara/cql-rb)
