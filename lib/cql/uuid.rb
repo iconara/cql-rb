@@ -13,7 +13,7 @@ module Cql
     # 8-4-4-4-12 form, or just 32 characters without hyphens), or from a
     # 128 bit number.
     #
-    # @raise [ArgumentError] if the string does not conform to the expected format
+    # @raise [InvalidUuidError] if the string does not conform to the expected format
     #
     def initialize(n)
       case n
@@ -61,22 +61,13 @@ module Cql
     RAW_FORMAT = '%032x'.force_encoding(Encoding::ASCII).freeze
     HYPHEN = '-'.force_encoding(Encoding::ASCII).freeze
     EMPTY_STRING = ''.freeze
+    HEX_RE = /^[A-Fa-f0-9]+$/
 
-    if RUBY_ENGINE == 'jruby'
-      HEX_RE = /^[A-Fa-f0-9]+$/
-      # See https://github.com/jruby/jruby/issues/1608
-      def from_s(str)
-        str = str.gsub(HYPHEN, EMPTY_STRING)
-        raise ArgumentError, "Expected 32 hexadecimal digits but got #{str.length}" unless str.length == 32
-        raise ArgumentError, "invalid value for Integer(): \"#{str}\"" unless str =~ HEX_RE
-        Integer(str, 16)
-      end
-    else
-      def from_s(str)
-        str = str.gsub(HYPHEN, EMPTY_STRING)
-        raise ArgumentError, "Expected 32 hexadecimal digits but got #{str.length}" unless str.length == 32
-        Integer(str, 16)
-      end
+    def from_s(str)
+      str = str.gsub(HYPHEN, EMPTY_STRING)
+      raise InvalidUuidError, "Expected 32 hexadecimal digits but got #{str.length}" unless str.length == 32
+      raise InvalidUuidError, "Expected only hexidecimal digits but got \"#{str}\"" unless str =~ HEX_RE
+      Integer(str, 16)
     end
   end
 end

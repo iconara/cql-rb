@@ -17,6 +17,9 @@ module Cql
   Io = Ione::Io
 end
 
+CqlArgumentError = Class.new(ArgumentError)
+InvalidUuidError = Class.new(CqlArgumentError)
+
 require 'cql/uuid'
 require 'cql/time_uuid'
 require 'cql/compression'
