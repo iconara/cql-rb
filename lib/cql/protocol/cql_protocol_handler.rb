@@ -202,7 +202,7 @@ module Cql
           else
             complete_request(id, @current_frame.body)
           end
-          @current_frame = @frame_decoder.decode_frame(@read_buffer)          
+          @current_frame = @frame_decoder.decode_frame(@read_buffer)
         end
       end
 
