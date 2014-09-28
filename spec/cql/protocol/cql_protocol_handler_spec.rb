@@ -248,6 +248,27 @@ module Cql
             128.times { |i| connection.data_listener.call([0x81, 0, i, 2, 0].pack('C4N')) }
             write_count.should == 128
           end
+
+          it 'does not stop sending queued requests even when one has timed out' do
+            write_count = 0
+            connection.stub(:write) do |s, &h|
+              write_count += 1
+              if h
+                h.call(buffer)
+              else
+                buffer << s
+              end
+            end
+            128.times do
+              protocol_handler.send_request(request)
+            end
+            scheduler.stub(:schedule_timer).with(5).and_return(timer_promise.future)
+            f1 = protocol_handler.send_request(request, 5)
+            f2 = protocol_handler.send_request(request)
+            timer_promise.fulfill
+            connection.data_listener.call([0x81, 0, 0, 2, 0].pack('C4N'))
+            write_count.should == 129
+          end
         end
       end
 
