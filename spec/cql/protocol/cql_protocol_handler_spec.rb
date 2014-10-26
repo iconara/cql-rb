@@ -112,6 +112,16 @@ module Cql
           futures[128].should be_resolved
         end
 
+        it 'flushes the request queue before it resolves the future of the just completed request' do
+          connection.stub(:write)
+          futures = Array.new(130) { protocol_handler.send_request(request) }
+          f = futures[0].map do
+            connection.should have_received(:write).exactly(129).times
+          end
+          connection.data_listener.call([0x81, 0, 0, 2, 0].pack('C4N'))
+          f.value
+        end
+
         context 'when a compressor is specified' do
           let :protocol_handler do
             described_class.new(connection, scheduler, 1, compressor)
@@ -247,6 +257,27 @@ module Cql
             timer_promise.fulfill
             128.times { |i| connection.data_listener.call([0x81, 0, i, 2, 0].pack('C4N')) }
             write_count.should == 128
+          end
+
+          it 'does not stop sending queued requests even when one has timed out' do
+            write_count = 0
+            connection.stub(:write) do |s, &h|
+              write_count += 1
+              if h
+                h.call(buffer)
+              else
+                buffer << s
+              end
+            end
+            128.times do
+              protocol_handler.send_request(request)
+            end
+            scheduler.stub(:schedule_timer).with(5).and_return(timer_promise.future)
+            f1 = protocol_handler.send_request(request, 5)
+            f2 = protocol_handler.send_request(request)
+            timer_promise.fulfill
+            connection.data_listener.call([0x81, 0, 0, 2, 0].pack('C4N'))
+            write_count.should == 129
           end
         end
       end
