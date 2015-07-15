@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    cql-rb (2.0.4)
+    cql-rb (2.0.5)
       ione (~> 1)
 
 GEM
@@ -16,7 +16,7 @@ GEM
       simplecov (>= 0.7)
       thor
     diff-lcs (1.2.4)
-    ione (1.0.0)
+    ione (1.2.1)
     lz4-ruby (0.3.2)
     lz4-ruby (0.3.2-java)
     method_source (0.8.1)
