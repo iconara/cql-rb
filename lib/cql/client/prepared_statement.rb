@@ -150,7 +150,13 @@ module Cql
       def execute(*args)
         connection = @connection_manager.random_connection
         if connection[self]
-          run(args, connection)
+          f = run(args, connection)
+          f.fallback do |e|
+            raise e unless e.is_a?(QueryError) && e.code == QueryError::UNPREPARED
+            prepare(connection).flat_map do
+              run(args, connection)
+            end
+          end
         else
           prepare(connection).flat_map do
             run(args, connection)
@@ -216,11 +222,12 @@ module Cql
       private
 
       def run(args, connection)
-        bound_args = args.shift(@raw_metadata.size)
-        unless bound_args.size == @raw_metadata.size && args.size <= 1
+        bound_args = args.take(@raw_metadata.size)
+        remaining_args = args.drop(@raw_metadata.size)
+        unless bound_args.size == @raw_metadata.size && remaining_args.size <= 1
           raise ArgumentError, "Expected #{@raw_metadata.size} arguments, got #{bound_args.size}"
         end
-        options = @execute_options_decoder.decode_options(args.last)
+        options = @execute_options_decoder.decode_options(remaining_args.last)
         statement_id = connection[self]
         request_metadata = @raw_result_metadata.nil?
         request = Protocol::ExecuteRequest.new(statement_id, @raw_metadata, bound_args, request_metadata, options[:consistency], options[:serial_consistency], options[:page_size], options[:paging_state], options[:trace])

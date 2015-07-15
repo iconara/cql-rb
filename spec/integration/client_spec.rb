@@ -108,6 +108,13 @@ describe 'A CQL client' do
       counters = result.each_with_object({}) { |row, acc| acc[row['id']] = row['count'] }
       counters.should eql('foo' => 11, 'bar' => 3)
     end
+
+    it 'handles altered tables' do
+      result1 = statement.execute('sue')
+      client.execute('ALTER TABLE users ADD password VARCHAR')
+      result2 = statement.execute('sue')
+      result2.to_a.should eql(result1.to_a)
+    end
   end
 
   context 'with multiple connections' do

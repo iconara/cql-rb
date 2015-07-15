@@ -295,6 +295,25 @@ module Cql
           statement.execute(11, 'hello', trace: true).value
           tracing.should be_true
         end
+
+        it 'prepares the statement again when it is lost' do
+          prepare_requests = 0
+          connections.each do |c|
+            c[:num_prepare] = 0
+            c.handle_request do |r, t|
+              if r.is_a?(Protocol::ExecuteRequest) && c[:num_prepare] == 1
+                Protocol::ErrorResponse.new(0x2500, 'Unprepared')
+              else
+                if r == Protocol::PrepareRequest.new(cql)
+                  c[:num_prepare] += 1
+                end
+                handle_request(c, r, t)
+              end
+            end
+          end
+          statement.execute(11, 'hello').value
+          connections.map { |c| c[:num_prepare] }.should include(2)
+        end
       end
 
       describe '#batch' do
