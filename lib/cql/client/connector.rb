@@ -24,7 +24,7 @@ module Cql
           connected_connections = connections.select(&:connected?)
           if connected_connections.empty?
             e = connections.first.error
-            if e.is_a?(Cql::QueryError) && e.code == 0x100
+            if e.is_a?(QueryError) && e.code == QueryError::BAD_CREDENTIALS
               e = AuthenticationError.new(e.message)
             end
             raise e

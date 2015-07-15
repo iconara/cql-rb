@@ -367,7 +367,7 @@ module Cql
       def connect_with_protocol_version_fallback
         f = create_cluster_connector.connect_all(@hosts, @connections_per_node)
         f.fallback do |error|
-          if error.is_a?(QueryError) && error.code == 0x0a && @protocol_version > 1
+          if error.is_a?(QueryError) && error.code == QueryError::PROTOCOL_ERROR && @protocol_version > 1
             @logger.warn('Could not connect using protocol version %d (will try again with %d): %s' % [@protocol_version, @protocol_version - 1, error.message])
             @protocol_version -= 1
             connect_with_protocol_version_fallback
