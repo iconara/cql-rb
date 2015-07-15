@@ -17,6 +17,7 @@ module Cql
   Io = Ione::Io
 end
 
+require 'cql/error_codes'
 require 'cql/uuid'
 require 'cql/time_uuid'
 require 'cql/compression'
