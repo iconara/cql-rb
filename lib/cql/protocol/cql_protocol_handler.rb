@@ -212,12 +212,11 @@ module Cql
         @lock.lock
         begin
           event_listeners = @event_listeners
-          return if event_listeners.empty?
         ensure
           @lock.unlock
         end
         event_listeners.each do |listener|
-          listener.call(@current_frame.body) rescue nil
+          listener.call(event_response) rescue nil
         end
       end
 
