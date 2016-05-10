@@ -7,17 +7,17 @@ module Cql
       include Enumerable
 
       def initialize
-        @connections = []
+        @connections = [].freeze
         @lock = Mutex.new
       end
 
       def add_connections(connections)
         @lock.synchronize do
-          @connections.concat(connections)
+          @connections = (@connections + connections).freeze
           connections.each do |connection|
             connection.on_closed do
               @lock.synchronize do
-                @connections.delete(connection)
+                @connections = (@connections - [connection]).freeze
               end
             end
           end
@@ -25,30 +25,31 @@ module Cql
       end
 
       def connected?
-        @lock.synchronize do
-          @connections.any?
-        end
+        !snapshot.empty?
       end
 
       def snapshot
-        @lock.synchronize do
-          @connections.dup
+        connections = nil
+        @lock.lock
+        begin
+          connections = @connections
+        ensure
+          @lock.unlock
         end
+        connections
       end
 
       def random_connection
-        raise NotConnectedError unless connected?
-        @lock.synchronize do
-          @connections.sample
-        end
+        connections = snapshot
+        raise NotConnectedError if connections.empty?
+        connections.sample
       end
 
       def each_connection(&callback)
         return self unless block_given?
-        raise NotConnectedError unless connected?
-        @lock.synchronize do
-          @connections.each(&callback)
-        end
+        connections = snapshot
+        raise NotConnectedError if connections.empty?
+        connections.each(&callback)
       end
       alias_method :each, :each_connection
     end
