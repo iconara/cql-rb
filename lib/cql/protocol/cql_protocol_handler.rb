@@ -196,14 +196,24 @@ module Cql
       def receive_data(data)
         @read_buffer << data
         @current_frame = @frame_decoder.decode_frame(@read_buffer, @current_frame)
+        promise_responses = []
         while @current_frame.complete?
           id = @current_frame.stream_id
+          body = @current_frame.body
           if id == -1
-            notify_event_listeners(@current_frame.body)
+            notify_event_listeners(body)
           else
-            complete_request(id, @current_frame.body)
+            promise_responses << complete_request(id, body)
           end
           @current_frame = @frame_decoder.decode_frame(@read_buffer)
+        end
+        unless promise_responses.empty?
+          flush_request_queue
+          promise_responses.each do |(promise, response)|
+            unless promise.timed_out?
+              promise.fulfill(response)
+            end
+          end
         end
       end
 
@@ -233,10 +243,7 @@ module Cql
         if response.is_a?(Protocol::SetKeyspaceResultResponse)
           @keyspace = response.keyspace
         end
-        flush_request_queue
-        unless promise.timed_out?
-          promise.fulfill(response)
-        end
+        [promise, response]
       end
 
       def flush_request_queue
