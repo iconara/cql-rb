@@ -26,6 +26,7 @@ module Cql
         @connection.on_data(&method(:receive_data))
         @connection.on_closed(&method(:socket_closed))
         @promises = Array.new(128) { nil }
+        @free_promises = (0...@promises.size).to_a
         @read_buffer = CqlByteBuffer.new
         @frame_encoder = FrameEncoder.new(protocol_version, @compressor)
         @frame_decoder = FrameDecoder.new(@compressor)
@@ -128,7 +129,7 @@ module Cql
         id = nil
         @lock.lock
         begin
-          if (id = next_stream_id)
+          if (id = @free_promises.pop)
             @promises[id] = promise
           end
         ensure
@@ -226,6 +227,7 @@ module Cql
         begin
           promise = @promises[id]
           @promises[id] = nil
+          @free_promises << id
         ensure
           @lock.unlock
         end
@@ -253,9 +255,10 @@ module Cql
           frame = nil
           @lock.lock
           begin
-            if @request_queue_out.any? && (id = next_stream_id)
+            if @request_queue_out.any? && (id = @free_promises.pop)
               promise = @request_queue_out.shift
               if promise.timed_out?
+                @free_promises << id
                 next
               else
                 frame = promise.frame
@@ -282,6 +285,7 @@ module Cql
           promises_to_fail.concat(@request_queue_in)
           promises_to_fail.concat(@request_queue_out)
           @promises.fill(nil)
+          @free_promises = (0...@promises.size).to_a
           @request_queue_in.clear
           @request_queue_out.clear
         end
@@ -292,14 +296,6 @@ module Cql
           @closed_promise.fail(cause)
         else
           @closed_promise.fulfill
-        end
-      end
-
-      def next_stream_id
-        if (stream_id = @promises.index(nil))
-          stream_id
-        else
-          nil
         end
       end
     end
