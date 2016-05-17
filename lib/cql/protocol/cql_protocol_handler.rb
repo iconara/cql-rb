@@ -26,6 +26,7 @@ module Cql
         @connection.on_data(&method(:receive_data))
         @connection.on_closed(&method(:socket_closed))
         @promises = Array.new(128) { nil }
+        @free_promises = (0...@promises.size).to_a
         @read_buffer = CqlByteBuffer.new
         @frame_encoder = FrameEncoder.new(protocol_version, @compressor)
         @frame_decoder = FrameDecoder.new(@compressor)
@@ -128,7 +129,7 @@ module Cql
         id = nil
         @lock.lock
         begin
-          if (id = next_stream_id)
+          if (id = @free_promises.pop)
             @promises[id] = promise
           end
         ensure
@@ -195,14 +196,24 @@ module Cql
       def receive_data(data)
         @read_buffer << data
         @current_frame = @frame_decoder.decode_frame(@read_buffer, @current_frame)
+        promise_responses = []
         while @current_frame.complete?
           id = @current_frame.stream_id
+          body = @current_frame.body
           if id == -1
-            notify_event_listeners(@current_frame.body)
+            notify_event_listeners(body)
           else
-            complete_request(id, @current_frame.body)
+            promise_responses << complete_request(id, body)
           end
           @current_frame = @frame_decoder.decode_frame(@read_buffer)
+        end
+        unless promise_responses.empty?
+          flush_request_queue
+          promise_responses.each do |(promise, response)|
+            unless promise.timed_out?
+              promise.fulfill(response)
+            end
+          end
         end
       end
 
@@ -211,12 +222,11 @@ module Cql
         @lock.lock
         begin
           event_listeners = @event_listeners
-          return if event_listeners.empty?
         ensure
           @lock.unlock
         end
         event_listeners.each do |listener|
-          listener.call(@current_frame.body) rescue nil
+          listener.call(event_response) rescue nil
         end
       end
 
@@ -226,16 +236,14 @@ module Cql
         begin
           promise = @promises[id]
           @promises[id] = nil
+          @free_promises << id
         ensure
           @lock.unlock
         end
         if response.is_a?(Protocol::SetKeyspaceResultResponse)
           @keyspace = response.keyspace
         end
-        flush_request_queue
-        unless promise.timed_out?
-          promise.fulfill(response)
-        end
+        [promise, response]
       end
 
       def flush_request_queue
@@ -253,9 +261,10 @@ module Cql
           frame = nil
           @lock.lock
           begin
-            if @request_queue_out.any? && (id = next_stream_id)
+            if @request_queue_out.any? && (id = @free_promises.pop)
               promise = @request_queue_out.shift
               if promise.timed_out?
+                @free_promises << id
                 next
               else
                 frame = promise.frame
@@ -282,6 +291,7 @@ module Cql
           promises_to_fail.concat(@request_queue_in)
           promises_to_fail.concat(@request_queue_out)
           @promises.fill(nil)
+          @free_promises = (0...@promises.size).to_a
           @request_queue_in.clear
           @request_queue_out.clear
         end
@@ -292,14 +302,6 @@ module Cql
           @closed_promise.fail(cause)
         else
           @closed_promise.fulfill
-        end
-      end
-
-      def next_stream_id
-        if (stream_id = @promises.index(nil))
-          stream_id
-        else
-          nil
         end
       end
     end
