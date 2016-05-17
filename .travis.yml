@@ -26,6 +26,7 @@ matrix:
     - rvm: jruby
       jdk: oraclejdk8
   allow_failures:
+    - rvm: 1.9.3
     - rvm: rbx-2
     - rvm: jruby-head
   fast_finish: true
