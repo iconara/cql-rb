@@ -420,7 +420,7 @@ Applications using cql-rb and JRuby can do over 10,000 write requests per second
 
 ## Try batching
 
-Batching in Cassandra isn't always as good as in other (non-distributed) databases. Since rows are distributed accross the cluster the coordinator node must still send the individual pieces of a batch to other nodes, and you could have done that yourself instead.
+Batching in Cassandra isn't always as good as in other (non-distributed) databases. Since rows are distributed across the cluster the coordinator node must still send the individual pieces of a batch to other nodes, and you could have done that yourself instead.
 
 For Cassandra 1.2 it is often best not to use batching at all, you'll have to smash strings together to create the batch statements, and that will waste time on the client side, will take longer to push over the network, and will take longer to parse and process on the server side. Prepared statements are almost always a better choice.
 
