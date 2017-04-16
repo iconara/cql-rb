@@ -18,6 +18,7 @@ module Cql
     end
 
     def <=>(other)
+      return nil unless other.kind_of?(Cql::Uuid)
       c = self.value <=> other.value
       return c if c == 0
       self.time_bits <=> other.time_bits

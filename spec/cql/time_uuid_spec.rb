@@ -38,6 +38,12 @@ module Cql
         y = Uuid.new(x.value)
         x.should == y
       end
+
+      it 'allows comparison of TimeUUID and nil' do
+        x = generator.next
+        y = nil
+        lambda { x.should_not == y }.should_not raise_error
+      end
     end
   end
 
