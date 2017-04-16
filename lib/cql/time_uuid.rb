@@ -18,8 +18,10 @@ module Cql
     end
 
     def <=>(other)
+      return unless other.respond_to? :value
       c = self.value <=> other.value
       return c if c == 0
+      return unless other.respond_to? :time_bits
       self.time_bits <=> other.time_bits
     end
 
