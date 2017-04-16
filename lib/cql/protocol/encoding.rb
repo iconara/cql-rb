@@ -27,7 +27,7 @@ module Cql
       end
 
       def write_uuid(buffer, uuid)
-        v = uuid.value
+        v = uuid.class == String ? uuid.gsub(/-/,'').to_i(16) : uuid.value
         write_int(buffer, (v >> 96) & 0xffffffff)
         write_int(buffer, (v >> 64) & 0xffffffff)
         write_int(buffer, (v >> 32) & 0xffffffff)
