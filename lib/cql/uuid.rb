@@ -36,6 +36,7 @@ module Cql
         s
       end
     end
+    alias_method :to_guid, :to_s
 
     def hash
       @n.hash
